@@ -19,6 +19,7 @@ using System.Text;
 using Enyim.Caching.Memcached;
 using Enyim.Caching.Memcached.Protocol;
 using System.Net;
+using System.Threading.Tasks;
 using Amazon.ElastiCacheCluster.Operations;
 using Enyim.Caching.Memcached.Results;
 
@@ -26,27 +27,31 @@ namespace LocalSimulationTests
 {
     public class TestNode : IMemcachedNode
     {
-        private IPEndPoint end;
-        public IPEndPoint EndPoint { get { return end; } set { this.end = value; } }
+        private EndPoint end;
+        public EndPoint EndPoint { get { return end; } set { this.end = value; } }
 
         private int requestNum = 1;
 
         public Enyim.Caching.Memcached.Results.IOperationResult Execute(IOperation op)
         {
-            IConfigOperation getOp = op as IConfigOperation;
+            IConfigOperation getOp = op as IConfigOperation 
+                                     ?? throw new NotImplementedException(op.ToString());
 
             byte[] bytes;
 
             switch (requestNum)
             {
                 case 1:
-                    bytes = Encoding.UTF8.GetBytes(String.Format("{0}\r\ncluster.0001.use1.cache.amazon.aws.com|10.10.10.1|11211 cluster.0002.use1.cache.amazon.aws.com|10.10.10.2|11211 cluster.0003.use1.cache.amazon.aws.com|10.10.10.3|11211\r\n", this.requestNum));
+                    bytes = Encoding.UTF8.GetBytes(
+                        $"{requestNum}\r\ncluster.0001.use1.cache.amazon.aws.com|10.10.10.1|11211 cluster.0002.use1.cache.amazon.aws.com|10.10.10.2|11211 cluster.0003.use1.cache.amazon.aws.com|10.10.10.3|11211\r\n");
                     break;
                 case 2:
-                    bytes = Encoding.UTF8.GetBytes(String.Format("{0}\r\ncluster.0002.use1.cache.amazon.aws.com|10.10.10.2|11211 cluster.0003.use1.cache.amazon.aws.com|10.10.10.3|11211\r\n", this.requestNum));
+                    bytes = Encoding.UTF8.GetBytes(
+                        $"{requestNum}\r\ncluster.0002.use1.cache.amazon.aws.com|10.10.10.2|11211 cluster.0003.use1.cache.amazon.aws.com|10.10.10.3|11211\r\n");
                     break;
                 default:
-                    bytes = Encoding.UTF8.GetBytes(String.Format("{0}\r\ncluster.0001.use1.cache.amazon.aws.com|10.10.10.1|11211\r\n", this.requestNum));
+                    bytes = Encoding.UTF8.GetBytes(
+                        $"{requestNum}\r\ncluster.0001.use1.cache.amazon.aws.com|10.10.10.1|11211\r\n");
                     break;
             }
             this.requestNum++;
@@ -54,9 +59,13 @@ namespace LocalSimulationTests
             var arr = new ArraySegment<byte>(bytes);
             getOp.ConfigResult = new CacheItem(0, arr);
 
-            var result = new PooledSocketResult();
-            result.Success = true;
+            var result = new PooledSocketResult {Success = true};
             return result;
+        }
+
+        public Task<IOperationResult> ExecuteAsync(IOperation op)
+        {
+            throw new NotImplementedException();
         }
 
         public override string ToString()
@@ -64,12 +73,12 @@ namespace LocalSimulationTests
             return "TestingAWSInternal";
         }
 
-        public bool ExecuteAsync(IOperation op, Action<bool> next)
+        public Task<bool> ExecuteAsync(IOperation op, Action<bool> next)
         {
             throw new NotImplementedException();
         }
 
-        public event Action<IMemcachedNode> Failed;
+        public event Action<IMemcachedNode> Failed = node => { };
 
         public bool IsAlive
         {
@@ -83,7 +92,6 @@ namespace LocalSimulationTests
 
         public void Dispose()
         {
-            throw new NotImplementedException();
         }
     }
 }

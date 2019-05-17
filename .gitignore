@@ -5,6 +5,7 @@
 *.suo
 *.user
 *.sln.docstates
+.vs/
 
 # Build results
 
@@ -65,6 +66,7 @@ ipch/
 # ReSharper is a .NET coding add-in
 _ReSharper*/
 *.[Rr]e[Ss]harper
+.idea
 
 # TeamCity is a build add-in
 _TeamCity*
